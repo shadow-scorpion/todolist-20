@@ -21,10 +21,24 @@ export const todolistsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Todolist"],
     }),
     removeTodolist: build.mutation<BaseResponse, string>({
-      query: (id) => ({
+      query: (id) => {
+        return {
         url: `todo-lists/${id}`,
         method: "DELETE",
-      }),
+      }},
+      onQueryStarted: async (queryArgument, mutationLifeCycleApi) => {
+            const patchResult = mutationLifeCycleApi.dispatch(
+              todolistsApi.util.updateQueryData("getTodolists", undefined, (state) => {
+                  const index = state.findIndex(todo => todo.id === queryArgument)
+                  if (index !== -1) state.splice(index, 1)
+                })
+            );
+            try {
+              await mutationLifeCycleApi.queryFulfilled
+            } catch (e) {
+              patchResult.undo()
+            }
+          },
       invalidatesTags: ["Todolist"],
     }),
     updateTodolistTitle: build.mutation<BaseResponse, { id: string; title: string }>({

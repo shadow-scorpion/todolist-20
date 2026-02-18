@@ -21,22 +21,8 @@ export const TodolistTitle = ({ todolist }: Props) => {
   const [removeTodolist] = useRemoveTodolistMutation()
   const [updateTodolistTitle] = useUpdateTodolistTitleMutation()
 
-  const dispatch = useAppDispatch()
-
-  const deleteTodolist = async () => {
-    const patchResult = dispatch(
-      todolistsApi.util.updateQueryData("getTodolists", undefined, (state) => {
-          const index = state.findIndex(todo => todo.id === id)
-        console.log(index)
-          if (index !== -1) state.splice(index, 1)
-        })
-    );
-
-    try {
-      await removeTodolist('id').unwrap()
-    } catch (e) {
-      patchResult.undo()
-    }
+  const deleteTodolist = () => {
+    removeTodolist(id)
   }
 
   const changeTodolistTitle = (title: string) => {
