@@ -14,9 +14,10 @@ import { getListItemSx } from "./TaskItem.styles"
 type Props = {
   task: DomainTask
   todolist: DomainTodolist
+  page: number
 }
 
-export const TaskItem = ({ task, todolist }: Props) => {
+export const TaskItem = ({ task, todolist, page }: Props) => {
   const [removeTask] = useRemoveTaskMutation()
   const [updateTask] = useUpdateTaskMutation()
 
@@ -27,7 +28,7 @@ export const TaskItem = ({ task, todolist }: Props) => {
   const changeTaskStatus = (e: ChangeEvent<HTMLInputElement>) => {
     const status = e.currentTarget.checked ? TaskStatus.Completed : TaskStatus.New
     const model = createTaskModel(task, { status })
-    updateTask({ taskId: task.id, todolistId: todolist.id, model })
+    updateTask({ taskId: task.id, todolistId: todolist.id, model, page })
   }
 
   const changeTaskTitle = (title: string) => {
