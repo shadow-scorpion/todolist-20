@@ -23,24 +23,20 @@ export const TodolistTitle = ({ todolist }: Props) => {
 
   const dispatch = useAppDispatch()
 
-  const changeTodolistStatus = (entityStatus: RequestStatus) => {
-    dispatch(
+  const deleteTodolist = async () => {
+    const patchResult = dispatch(
       todolistsApi.util.updateQueryData("getTodolists", undefined, (state) => {
-        const todolist = state.find((todolist) => todolist.id === id)
-        if (todolist) {
-          todolist.entityStatus = entityStatus
-        }
-      }),
-    )
-  }
+          const index = state.findIndex(todo => todo.id === id)
+        console.log(index)
+          if (index !== -1) state.splice(index, 1)
+        })
+    );
 
-  const deleteTodolist = () => {
-    changeTodolistStatus("loading")
-    removeTodolist(id)
-      .unwrap()
-      .catch(() => {
-        changeTodolistStatus("idle")
-      })
+    try {
+      await removeTodolist('id').unwrap()
+    } catch (e) {
+      patchResult.undo()
+    }
   }
 
   const changeTodolistTitle = (title: string) => {
