@@ -20,6 +20,7 @@ import IconButton from "@mui/material/IconButton"
 import LinearProgress from "@mui/material/LinearProgress"
 import Switch from "@mui/material/Switch"
 import Toolbar from "@mui/material/Toolbar"
+import Box from "@mui/material/Box"
 
 export const Header = () => {
   const isLoggedIn = useAppSelector(selectIsLoggedIn)
@@ -63,7 +64,16 @@ export const Header = () => {
           </div>
         </Container>
       </Toolbar>
-      {status === "loading" && <LinearProgress />}
+      <Box sx={{ position: 'relative', pt: 1 }}>
+      {status === "loading" &&  <LinearProgress sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        // height: '2px' // можно сделать её тоньше, чтобы было изящнее
+      }}/>
+      }
+      </Box>
     </AppBar>
   )
 }
