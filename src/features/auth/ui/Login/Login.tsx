@@ -3,19 +3,19 @@ import { AUTH_TOKEN } from "@/common/constants"
 import { ResultCode } from "@/common/enums"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
 import { getTheme } from "@/common/theme"
-import { useLoginMutation } from "@/features/auth/api/authApi"
+import {useLoginMutation } from "@/features/auth/api/authApi"
 import { type LoginInputs, loginSchema } from "@/features/auth/lib/schemas"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Button from "@mui/material/Button"
 import Checkbox from "@mui/material/Checkbox"
 import FormControl from "@mui/material/FormControl"
 import FormControlLabel from "@mui/material/FormControlLabel"
-import FormGroup from "@mui/material/FormGroup"
 import FormLabel from "@mui/material/FormLabel"
 import Grid from "@mui/material/Grid"
 import TextField from "@mui/material/TextField"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
 import styles from "./Login.module.css"
+import { Stack } from "@mui/material"
 
 export const Login = () => {
   const themeMode = useAppSelector(selectThemeMode)
@@ -71,13 +71,12 @@ export const Login = () => {
               <b>Password:</b> free
             </p>
           </FormLabel>
-          <FormGroup>
-            <TextField label="Email" margin="normal" error={!!errors.email} {...register("email")} />
+          <Stack gap={2}>
+            <TextField label="Email" error={!!errors.email} {...register("email")} />
             {errors.email && <span className={styles.errorMessage}>{errors.email.message}</span>}
             <TextField
               type="password"
               label="Password"
-              margin="normal"
               error={!!errors.email}
               {...register("password")}
             />
@@ -95,7 +94,7 @@ export const Login = () => {
             <Button type="submit" variant="contained" color="primary">
               Login
             </Button>
-          </FormGroup>
+          </Stack>
         </FormControl>
       </form>
     </Grid>
