@@ -1,5 +1,4 @@
 import { baseApi } from "@/app/baseApi"
-import { instance } from "@/common/instance"
 import type { BaseResponse } from "@/common/types"
 import type { DomainTask, GetTasksResponse, UpdateTaskModel } from "./tasksApi.types"
 import { PAGE_SIZE } from "@/common/constants"
@@ -32,54 +31,88 @@ export const tasksApi = baseApi.injectEndpoints({
     }),
     updateTask: build.mutation<
       BaseResponse<{ item: DomainTask }>,
-      { todolistId: string; taskId: string; model: UpdateTaskModel, page?: number }
+      { todolistId: string; taskId: string; model: UpdateTaskModel }
     >({
       query: ({ todolistId, taskId, model }) => ({
         url: `todo-lists/${todolistId}/tasks/${taskId}`,
         method: "PUT",
         body: model,
       }),
-      onQueryStarted: async ({ todolistId, taskId, model }, {dispatch, queryFulfilled, getState}) => {
+      onQueryStarted: async ({ todolistId, taskId, model }, { dispatch, queryFulfilled, getState }) => {
         const cachedArgs = tasksApi.util.selectCachedArgsForQuery(getState(), "getTasks")
         const patchResult: any[] = []
 
-        cachedArgs.forEach((arg)=> (
+        cachedArgs.forEach((arg) =>
           patchResult.push(
             dispatch(
-              tasksApi.util.updateQueryData("getTasks", { todolistId: todolistId, params: { page: arg.params.page } }, (state) => {
-                const index = state.items.findIndex(task => task.id === taskId)
-                if (index !== -1) state.items[index].status = model.status
-              })
-            )
-          )
-        ))
-        try{
+              tasksApi.util.updateQueryData(
+                "getTasks",
+                { todolistId: todolistId, params: { page: arg.params.page } },
+                (state) => {
+                  const index = state.items.findIndex((task) => task.id === taskId)
+                  if (index !== -1) {
+                    state.items[index] = { ...state.items[index], ...model }
+                  }
+                },
+              ),
+            ),
+          ),
+        )
+        try {
           await queryFulfilled
         } catch (e) {
-          patchResult.forEach((patch)=> patch.undo())
+          patchResult.forEach((patch) => patch.undo())
         }
       },
-        invalidatesTags: (_result, _error, { todolistId }) => [{ type: "Task", id: todolistId }],
+      invalidatesTags: (_result, _error, { todolistId }) => [{ type: "Task", id: todolistId }],
+    }),
+    reorderTask: build.mutation<
+      BaseResponse,
+      {
+        todolistId: string
+        taskId: string | undefined
+        payload: { oldIndex: number; newIndex: number; putAfterItemId: string | null }
+      }
+    >({
+      query: ({ todolistId, taskId, payload: { putAfterItemId } }) => ({
+        url: `/todo-lists/${todolistId}/tasks/${taskId}/reorder`,
+        method: "PUT",
+        body: { putAfterItemId },
+      }),
+      onQueryStarted: async ({ todolistId, taskId, payload }, mutationLifeCycleApi) => {
+        const cachedArgs = tasksApi.util.selectCachedArgsForQuery(mutationLifeCycleApi.getState(), "getTasks")
+        let patchResult: any[] = []
+
+        cachedArgs.forEach((arg) => {
+          patchResult.push(
+            mutationLifeCycleApi.dispatch(
+              tasksApi.util.updateQueryData("getTasks", { todolistId, params: { page: arg.params.page } }, (state) => {
+                // Что бы не вычислять тут старый и новый index, что не очень надёжно, лучше получить их в аргументах, так точно не будет разбежностей.
+                const { oldIndex, newIndex } = payload
+                if (state.items[oldIndex]?.id === taskId) {
+                  const [dragTask] = state.items.splice(oldIndex, 1)
+                  state.items.splice(newIndex, 0, dragTask)
+                }
+
+              }),
+            ),
+          )
+        })
+        try {
+          await mutationLifeCycleApi.queryFulfilled
+        } catch (e) {
+          patchResult.forEach((patch) => patch.undo())
+        }
+      },
+      invalidatesTags: (_result, _error, { todolistId }) => [{ type: "Task", id: todolistId }],
     }),
   }),
 })
 
-export const { useGetTasksQuery, useAddTaskMutation, useRemoveTaskMutation, useUpdateTaskMutation } = tasksApi
-
-export const _tasksApi = {
-  getTasks(todolistId: string) {
-    return instance.get<GetTasksResponse>(`/todo-lists/${todolistId}/tasks`)
-  },
-  createTask(payload: { todolistId: string; title: string }) {
-    const { todolistId, title } = payload
-    return instance.post<BaseResponse<{ item: DomainTask }>>(`/todo-lists/${todolistId}/tasks`, { title })
-  },
-  updateTask(payload: { todolistId: string; taskId: string; model: UpdateTaskModel }) {
-    const { todolistId, taskId, model } = payload
-    return instance.put<BaseResponse<{ item: DomainTask }>>(`/todo-lists/${todolistId}/tasks/${taskId}`, model)
-  },
-  deleteTask(payload: { todolistId: string; taskId: string }) {
-    const { todolistId, taskId } = payload
-    return instance.delete<BaseResponse>(`/todo-lists/${todolistId}/tasks/${taskId}`)
-  },
-}
+export const {
+  useGetTasksQuery,
+  useAddTaskMutation,
+  useRemoveTaskMutation,
+  useUpdateTaskMutation,
+  useReorderTaskMutation,
+} = tasksApi
