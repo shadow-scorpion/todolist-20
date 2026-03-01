@@ -27,6 +27,26 @@ export const tasksApi = baseApi.injectEndpoints({
         url: `todo-lists/${todolistId}/tasks/${taskId}`,
         method: "DELETE",
       }),
+      onQueryStarted: async ({ todolistId, taskId }, mutationLifeCycleApi) => {
+        const cachedArg = tasksApi.util.selectCachedArgsForQuery(mutationLifeCycleApi.getState(), "getTasks")
+        const patchResult: any[] = []
+
+        cachedArg.forEach((arg) =>
+          patchResult.push(
+            mutationLifeCycleApi.dispatch(
+              tasksApi.util.updateQueryData("getTasks", { todolistId, params: { page: arg.params.page } }, (state) => {
+                const findIndexTask = state.items.findIndex((task) => task.id === taskId)
+                if (findIndexTask !== -1) state.items.splice(findIndexTask, 1)
+              }),
+            ),
+          ),
+        )
+        try {
+          await mutationLifeCycleApi.queryFulfilled
+        } catch (e) {
+          patchResult.forEach((patch) => patch.undo())
+        }
+      },
       invalidatesTags: (_result, _error, { todolistId }) => [{ type: "Task", id: todolistId }],
     }),
     updateTask: build.mutation<
